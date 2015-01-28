@@ -7,6 +7,8 @@ Created on Wed Jan 28 15:40:43 2015
 
 import sys,os
 import keyring
+from train import train
+from uzo import Uzo
 
 SERVICE = "uzosms"
 CONFIG = os.path.expanduser('~/.config/.uzosms')
@@ -32,9 +34,9 @@ def sanitize_phone(phone_str):
         else:
             phone_str = phone_str[4:]
     try:
-        phone_num = int(phone_str)
+        phone_num = str(int(phone_str))
     except ValueError:
-        raise Exception("{0} is not a number".format(phone))
+        raise Exception("{0} is not a number".format(phone_str))
     else:
         return phone_num
         
@@ -42,13 +44,23 @@ def _load_login():
     try:
         return sanitize_phone(open(CONFIG,'rt').read())
     except IOError:
-        raise Exception("No valid login found in {0}\n Run \"{1} login\" first".format(CONFIG,name))
+        raise Exception("No valid login found in {0}\n Must run \"{1} login\" first".format(CONFIG,name))
         
 def _save_login(login):
     open(CONFIG,'wt').write(login)
 
+def _get_login_pass():
+    login = _load_login()
+    password = keyring.get_password(SERVICE,str(login))
+    if password is None:
+        raise Exception("No password in keyring\n Must run \"{0} login\" first".format(name))
+    return login,password
+
+# ACTIONS --------------------------------------------------------------------    
+
 def do_login(login,password):
     print "Setting config for ", login
+    u = Uzo(login,password,skipLoadCookies=True)
     keyring.set_password(SERVICE,str(login),password)
     _save_login(str(login))
 
@@ -57,18 +69,25 @@ def do_logout():
     login = _load_login()
     if login:
         keyring.delete_password(SERVICE,str(login))
+    Uzo.delete_cookies()
 
 def do_send(number,message):
     print "Sending sms to", number, "with message :", message
-
+    u = Uzo(*_load_login())
+    u.send_sms(number,message)    
+    
 def do_check():
     print "Checking number of sms left..."
+    u = Uzo(*_load_login())
+    print u.nleft
 
 def do_train():
     print "Training model"
+    train()
 
 def do_grab(n=10):
     print "Grabbing %i new captchas" % n
+    raise NotImplementedError
     
 def _main():
     global args
@@ -114,8 +133,8 @@ def _main():
 def main():
     try:
         _main()
-    except Exception as e:
-        print "Usage error!", e
+    except IndexError:
+        print "Usage error!"
         print usage
         
 if __name__ == "__main__":
