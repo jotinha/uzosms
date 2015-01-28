@@ -18,14 +18,19 @@ setup(
          'numpy',
          'scipy',
          'scikit-learn',
+         'pillow',
          'path.py',
          'keyring',
+         'nose',
          
 	],
     entry_points = {
         'console_scripts': [
             'uzo = uzosms.__main__:main'        
         ]
+    },
+    package_data = {
+         'uzosms': ['captchas/*','model.pkl']   
     },
     long_description=long_description
 )
