@@ -1,0 +1,7 @@
+path.py
+requests
+beautifulsoup4
+numpy
+scipy==0.15.1
+scikit-learn==0.15.1
+keyring
