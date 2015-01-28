@@ -6,7 +6,6 @@ Created on Wed Aug  6 17:01:02 2014
 """
 from path import path
 
-from uzo2 import *
 from captcha import *
 import sklearn
 from sklearn.decomposition import PCA
