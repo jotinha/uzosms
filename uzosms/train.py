@@ -13,13 +13,17 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.externals import joblib
 
-MODEL = joblib.load('model.pkl')
+MODELFILE = path(__file__).dirname() + '/model.pkl'
+            
+DATADIR = path(__file__).dirname() + '/captchas'
 
+print "DATADIR:",DATADIR          
+          
 def grab_and_save_captcha(session,fname=None):
     r = grab_captcha(session)
     if r.status_code == 200 and r.content:
         if fname is None: 
-            fname = 'captchas/' + r.url.split('/')[-1]
+            fname = DATADIR + r.url.split('/')[-1]
         with open(fname, 'wb') as f:
             f.write(r.content)
     else:
@@ -33,7 +37,7 @@ def download_captchas(n=10,max_interval=10):
         grab_and_save_captcha(s)
         
 def answer_captchas(lr_pca=None):
-    for fname in path('captchas').files('*.xml'):
+    for fname in path(DATADIR).files('*.xml'):
         im = load_image(fname)
         imshow(im)
         show()
@@ -47,12 +51,12 @@ def answer_captchas(lr_pca=None):
         elif answer.strip().lower() == 'q':
             break
 
-        fname.move('captchas/%s.jpg' % answer)
+        fname.move('%s/%s.jpg' % (DATADIR,answer))
 
 def create_chars_train():
     charsTrain = {i:[] for i in xrange(10)}
     charsTrain_fname = {i:[] for i in xrange(10)}
-    for fname in path('captchas').files('*.jpg'):
+    for fname in path(DATADIR).files('*.jpg'):
         numbers = map(int,fname.basename().stripext())
         
         im = load_image(fname)
@@ -130,4 +134,17 @@ def solve_image(im,lr,pca=None,as_str = True):
     if as_str:
         r = ''.join(map(str,r))
     return r
+
+def save_model(model,pca=None):
+    joblib.dump(model,MODELFILE,compress=9)
+    if pca:
+        raise NotImplementedError
+
+def load_model():
+    return joblib.load(MODELFILE)    
+
+def train():
+    X,Y = create_training_set()
+    model,pca = fit(X,Y)
+    save_model(model,pca)
     

@@ -6,27 +6,52 @@ Created on Thu Aug 14 04:56:50 2014
 """
 
 import requests
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
+from cookielib import LWPCookieJar
 import time
 import captcha, train
-
-MODEL = train.MODEL
+from path import path
 
 class Uzo(object):
     LOGINURL = "https://www.uzo.pt//pt/meu-uzo/pagina.uzo"
     CAPTCHAURL = "https://meu.uzo.pt/site/gr_captcha-%i.xml"
     SMSURL = 'https://meu.uzo.pt/sms_gratis.xml'
     TEMPFILE = './captcha.jpg'
+    COOKIES = '.cookies'
     
-    def __init__(self,username,password):
+    def __init__(self,username,password,skipLoadCookies=False):
         self.username = username
         self.password = password
-        
+
         self.session = requests.Session()
         self.session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'        
+        self.session.cookies = LWPCookieJar(filename=self.COOKIES)
         
-        self.login()
+        if path(self.COOKIES).exists() and not skipLoadCookies:
+            #TODO check if username in cookies matches
+            self.session.cookies.load()
+            if not self.checkLogin():
+                self.login()
+        else:
+            self.login()
+        
+        if not self.checkLogin():
+            raise Exception("Couldn't login")
+        
 
+    def checkLogin(self):
+        
+        self.last_response = r = self.session.get(self.SMSURL)
+        if r.content:
+            soup = BeautifulSoup(r.content)
+            summary = soup.find('div',attrs={'class':'summary'})
+            if summary:
+                self.nleft,self.nsent = [int(s.text) for s in summary.findChildren('span',limit=2)]
+                return True
+            elif soup.find('div',attrs={'class':'summary2'}):
+                return False
+        raise UzoError("Can't tell login status")
+               
     def login(self):
         
         self.last_response = r = self.session.get(self.LOGINURL)
@@ -53,8 +78,9 @@ class Uzo(object):
         #post form
     
         self.last_response = r2 = self.session.post(self.LOGINURL,data=data)
-    
-        if 'Entrou na UZO' in r2.content:
+   
+        if 'Entrou na UZO' in r2.content: #FIXME, test for successfull login
+            self.session.cookies.save()
             return True
         else:
             raise UzoError("Login failed")
@@ -98,7 +124,10 @@ class Uzo(object):
             raise UzoError("Message too long")
         else:
             raise UzoError("Failed")
-            
+    
+    @classmethod
+    def delete_cookies(cls):
+        path(cls.COOKIES).remove_p()
     
 class UzoError(Exception):
     pass
