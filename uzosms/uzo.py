@@ -18,8 +18,11 @@ class Uzo(object):
     SMSURL = 'https://meu.uzo.pt/sms_gratis.xml'
     TEMPFILE = './captcha.jpg'
     COOKIES = '.cookies'
+    MAXCHARS = 137
     
-    def __init__(self,username,password,skipLoadCookies=False):
+    def __init__(self,username,password,forceLogin=False):
+        """Initializes new Uzo object. Does not login"""
+        
         self.username = username
         self.password = password
 
@@ -27,7 +30,9 @@ class Uzo(object):
         self.session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'        
         self.session.cookies = LWPCookieJar(filename=self.COOKIES)
         
-        if path(self.COOKIES).exists() and not skipLoadCookies:
+        self.history = []
+        
+        if path(self.COOKIES).exists() and not forceLogin:
             #TODO check if username in cookies matches
             self.session.cookies.load()
             if not self.checkLogin():
@@ -37,8 +42,8 @@ class Uzo(object):
         
         if not self.checkLogin():
             raise Exception("Couldn't login")
-        
 
+    
     def checkLogin(self):
         
         self.last_response = r = self.session.get(self.SMSURL)
@@ -53,9 +58,10 @@ class Uzo(object):
         raise UzoError("Can't tell login status")
                
     def login(self):
-        
-        self.last_response = r = self.session.get(self.LOGINURL)
-   
+        self.delete_cookies()
+
+        r = self._request('GET',self.LOGINURL)
+        #TODO posso verificar aqui logo se o login já está feito
         soup = BeautifulSoup(r.content)
     
         #find first form in the page, the login form    
@@ -76,8 +82,7 @@ class Uzo(object):
         data['__EVENTTARGET'] = 'ctl00$ctl00$ucLogin1$lnkbtnOK'
         
         #post form
-    
-        self.last_response = r2 = self.session.post(self.LOGINURL,data=data)
+        r2 = self._request('POST',self.LOGINURL,data=data)
    
         if 'Entrou na UZO' in r2.content: #FIXME, test for successfull login
             self.session.cookies.save()
@@ -88,7 +93,7 @@ class Uzo(object):
     def _grab_captcha(self,fname=None):
         timestamp =  int(time.time()*1000)
                
-        self.last_response = r = self.session.get(self.CAPTCHAURL % timestamp)
+        r = self._request('GET',self.CAPTCHAURL % timestamp)
 
         if r.status_code == 200:
             with open(fname or self.TEMPFILE,'wb') as f:
@@ -97,12 +102,15 @@ class Uzo(object):
             raise UzoError("Can't open captcha")
             
     def _solve_last_captcha(self):
+        if not self.model:
+            self.model = train.load_model()
+            
         im = captcha.load_image(self.TEMPFILE)
-        return train.solve_image(im,MODEL)
+        return train.solve_image(im,self.model)
 
     def send_sms(self,destnumber,msg):
-        if len(msg) > 137:
-            print "Max characters: 137"
+        if len(msg) > self.MAXCHARS:
+            print "Max characters: ", self.MAXCHARS
             return            
             
         c = self._grab_captcha()
@@ -117,7 +125,7 @@ class Uzo(object):
             'captcha':solution,
         }
         
-        self.last_response = r = self.session.post(self.SMSURL,data=data)
+        r = self._request('POST',self.SMSURL,data=data)
         if 'sucesso' in r.content:
             return True
         elif 'mensagem excede o máximo de caracteres permitido' in r.content:
@@ -128,6 +136,17 @@ class Uzo(object):
     @classmethod
     def delete_cookies(cls):
         path(cls.COOKIES).remove_p()
+    
+    def _request(url,method='GET',data=None):
+        print "%s %s" % (url,method)
+        if 'GET' == method:
+            r = self.session.get(url)
+        elif 'POST' == method:
+            r = self.session.post(url,data=data)
+        else:
+            raise UzoError('Invalid method %s' % method)
+        self.history.append(r)
+        return r
     
 class UzoError(Exception):
     pass

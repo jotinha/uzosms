@@ -9,6 +9,7 @@ import sys,os
 import keyring
 from train import train
 from uzo import Uzo
+from path import path
 
 SERVICE = "uzosms"
 CONFIG = os.path.expanduser('~/.config/.uzosms')
@@ -39,46 +40,52 @@ def sanitize_phone(phone_str):
         raise Exception("{0} is not a number".format(phone_str))
     else:
         return phone_num
-        
-def _load_login():
+    
+def _delete_credentials():
+    login = _load_credentials(skipPassword=True) 
+    path(CONFIG).remove_p()
     try:
-        return sanitize_phone(open(CONFIG,'rt').read())
+        keyring.delete_password(SERVICE,login)
+    except keyring.errors.PasswordDeleteError:
+        pass
+    
+def _save_credentials(login,password):
+    open(CONFIG,'wt').write(login)
+    keyring.set_password(SERVICE,login,password)
+
+def _load_credentials(skipPassword=False):
+    try:
+        login = sanitize_phone(open(CONFIG,'rt').read())
     except IOError:
         raise Exception("No valid login found in {0}\n Must run \"{1} login\" first".format(CONFIG,name))
+    if skipPassword:
+        return login
         
-def _save_login(login):
-    open(CONFIG,'wt').write(login)
-
-def _get_login_pass():
-    login = _load_login()
-    password = keyring.get_password(SERVICE,str(login))
+    password = keyring.get_password(SERVICE,login)
     if password is None:
-        raise Exception("No password in keyring\n Must run \"{0} login\" first".format(name))
+        raise Exception("No password in keyring\n Must run \"%s login\" first" % login)
     return login,password
 
 # ACTIONS --------------------------------------------------------------------    
 
 def do_login(login,password):
     print "Setting config for ", login
-    u = Uzo(login,password,skipLoadCookies=True)
-    keyring.set_password(SERVICE,str(login),password)
-    _save_login(str(login))
+    u = Uzo(login,password,forceLogin=True)
+    _save_credentials(login,password)
 
 def do_logout():
     print "Removing login credentials"
-    login = _load_login()
-    if login:
-        keyring.delete_password(SERVICE,str(login))
+    _delete_credentials()
     Uzo.delete_cookies()
 
 def do_send(number,message):
     print "Sending sms to", number, "with message :", message
-    u = Uzo(*_load_login())
-    u.send_sms(number,message)    
+    u = Uzo(*_load_credentials())
+    u.send_sms(number,message)
     
 def do_check():
     print "Checking number of sms left..."
-    u = Uzo(*_load_login())
+    u = Uzo(*_load_credentials())
     print u.nleft
 
 def do_train():
