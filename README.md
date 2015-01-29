@@ -35,4 +35,4 @@ Re-treina o modelo com os captchas previamente resolvidos
 
 #### `uzo grab [n]`
 Faz o download de `n` novos captchas (default 10) que devem ser resolvidos manualmente mudando o nome do ficheiro de
-imagem `<timestamp>.xml` para `yyyyyy.jpg` onde `yyy` é o conjunto de 6 algaritmos que correspondem à imagem      
+imagem `<timestamp>.xml` para `yyyyyy.jpg` onde `yyy` é o conjunto de 6 algarismos que correspondem à imagem      
