@@ -9,7 +9,7 @@ Uma vez que usa o [scikit-learn](http://scikit-learn.org/stable/) é um bocado p
 
 Como utilizar
 -------------
-1. `git clone jotinha.github.io/uzosms`
+1. `git clone https://github.com/jotinha/uzosms.git`
 2. `python setup.py install`
 3. Guardar o login/password com `uzo login <number> <password>`
 4. Enviar sms com `uzo send 960000000 olá mundo`
