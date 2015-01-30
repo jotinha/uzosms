@@ -13,9 +13,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.externals import joblib
 
-MODELFILE = path(__file__).dirname() + '/model.pkl'
+MODELFILE = path(__file__).dirname().joinpath('model.pkl')
             
-DATADIR = path(__file__).dirname() + '/captchas'
+DATADIR = path(__file__).dirname().joinpath('captchas')
 
 print "DATADIR:",DATADIR          
           

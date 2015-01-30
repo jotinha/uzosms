@@ -66,17 +66,16 @@ def _load_credentials(skipPassword=False):
         raise Exception("No password in keyring\n Must run \"%s login\" first" % login)
     return login,password
 
-# ACTIONS --------------------------------------------------------------------    
+# COMMANDS --------------------------------------------------------------------    
 
 def do_login(login,password):
     print "Setting config for ", login
-    u = Uzo(login,password,forceLogin=True)
+    u = Uzo(login,password)
     _save_credentials(login,password)
 
 def do_logout():
     print "Removing login credentials"
     _delete_credentials()
-    Uzo.delete_cookies()
 
 def do_send(number,message):
     print "Sending sms to", number, "with message :", message
@@ -86,7 +85,7 @@ def do_send(number,message):
 def do_check():
     print "Checking number of sms left..."
     u = Uzo(*_load_credentials())
-    print u.nleft
+    print u.checkMessagesLeft()
 
 def do_train():
     print "Training model"

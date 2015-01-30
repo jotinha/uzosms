@@ -7,7 +7,6 @@ Created on Thu Aug 14 04:56:50 2014
 
 import requests
 from bs4 import BeautifulSoup
-from cookielib import LWPCookieJar
 import time
 import captcha, train
 from path import path
@@ -17,10 +16,9 @@ class Uzo(object):
     CAPTCHAURL = "https://meu.uzo.pt/site/gr_captcha-%i.xml"
     SMSURL = 'https://meu.uzo.pt/sms_gratis.xml'
     TEMPFILE = './captcha.jpg'
-    COOKIES = '.cookies'
     MAXCHARS = 137
     
-    def __init__(self,username,password,forceLogin=False):
+    def __init__(self,username,password):
         """Initializes new Uzo object. Does not login"""
         
         self.username = username
@@ -28,39 +26,31 @@ class Uzo(object):
 
         self.session = requests.Session()
         self.session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'        
-        self.session.cookies = LWPCookieJar(filename=self.COOKIES)
-        
+
         self.history = []
         
-        if path(self.COOKIES).exists() and not forceLogin:
-            #TODO check if username in cookies matches
-            self.session.cookies.load()
-            if not self.checkLogin():
-                self.login()
-        else:
-            self.login()
+        self.model = None
         
-        if not self.checkLogin():
-            raise Exception("Couldn't login")
-
+        self.login()
     
-    def checkLogin(self):
+    def checkMessagesLeft(self):
         
-        self.last_response = r = self.session.get(self.SMSURL)
+        r = self._request(self.SMSURL)
         if r.content:
             soup = BeautifulSoup(r.content)
             summary = soup.find('div',attrs={'class':'summary'})
             if summary:
-                self.nleft,self.nsent = [int(s.text) for s in summary.findChildren('span',limit=2)]
-                return True
+                nleft,nsent = [int(s.text) for s in summary.findChildren('span',limit=2)]
+                return nleft
             elif soup.find('div',attrs={'class':'summary2'}):
-                return False
-        raise UzoError("Can't tell login status")
+                raise UzoError("Can't read number of messages left. Probably not logged in.")
+        
+        raise UzoError("Can't read number of messages left. Unknown error")
                
     def login(self):
-        self.delete_cookies()
 
-        r = self._request('GET',self.LOGINURL)
+        r = self._request(self.LOGINURL)
+        
         #TODO posso verificar aqui logo se o login já está feito
         soup = BeautifulSoup(r.content)
     
@@ -82,18 +72,20 @@ class Uzo(object):
         data['__EVENTTARGET'] = 'ctl00$ctl00$ucLogin1$lnkbtnOK'
         
         #post form
-        r2 = self._request('POST',self.LOGINURL,data=data)
-   
-        if 'Entrou na UZO' in r2.content: #FIXME, test for successfull login
-            self.session.cookies.save()
-            return True
-        else:
-            raise UzoError("Login failed")
-    
+        r2 = self._request(self.LOGINURL,'POST',data=data,allow_redirects=False)
+        
+        if r2.status_code == 302:
+            if '?error=' in r2.headers.get('location'):
+                raise UzoError('Login failed')
+            else:
+                return
+        
+        print "Warning: can't tell login status"
+        
     def _grab_captcha(self,fname=None):
         timestamp =  int(time.time()*1000)
                
-        r = self._request('GET',self.CAPTCHAURL % timestamp)
+        r = self._request(self.CAPTCHAURL % timestamp)
 
         if r.status_code == 200:
             with open(fname or self.TEMPFILE,'wb') as f:
@@ -125,7 +117,7 @@ class Uzo(object):
             'captcha':solution,
         }
         
-        r = self._request('POST',self.SMSURL,data=data)
+        r = self._request(self.SMSURL,'POST',data=data)
         if 'sucesso' in r.content:
             return True
         elif 'mensagem excede o máximo de caracteres permitido' in r.content:
@@ -133,16 +125,13 @@ class Uzo(object):
         else:
             raise UzoError("Failed")
     
-    @classmethod
-    def delete_cookies(cls):
-        path(cls.COOKIES).remove_p()
-    
-    def _request(url,method='GET',data=None):
-        print "%s %s" % (url,method)
+   
+    def _request(self,url,method='GET',**kwargs):
+        print "%s %s" % (method,url)
         if 'GET' == method:
-            r = self.session.get(url)
+            r = self.session.get(url,**kwargs)
         elif 'POST' == method:
-            r = self.session.post(url,data=data)
+            r = self.session.post(url,**kwargs)
         else:
             raise UzoError('Invalid method %s' % method)
         self.history.append(r)
