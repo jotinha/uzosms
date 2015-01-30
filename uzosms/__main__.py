@@ -7,7 +7,7 @@ Created on Wed Jan 28 15:40:43 2015
 
 import sys,os
 import keyring
-from train import train
+from train import train,DATADIR
 from uzo import Uzo
 from path import path
 
@@ -93,7 +93,15 @@ def do_train():
 
 def do_grab(n=10):
     print "Grabbing %i new captchas" % n
-    raise NotImplementedError
+    u = Uzo(*_load_credentials())
+    
+    f = lambda i : path(DATADIR.joinpath('unsolved_%i.xml' % i))
+    i = 0
+    for _ in range(n):
+        while f(i).exists():
+            i+=1
+        print "Saving to ", f(i)
+        u._grab_captcha(f(i))
     
 def _main():
     global args
