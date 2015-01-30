@@ -34,5 +34,11 @@ Devolve o número de mensagens ainda disponíveis no mês actual
 Re-treina o modelo com os captchas previamente resolvidos
 
 #### `uzo grab [n]`
-Faz o download de `n` novos captchas (default 10) que devem ser resolvidos manualmente mudando o nome do ficheiro de
-imagem `<timestamp>.xml` para `yyyyyy.jpg` onde `yyy` é o conjunto de 6 algarismos que correspondem à imagem      
+Faz o download de `n` novos captchas (default 10) que podem ser resolvidos manualmente mudando o nome do ficheiro .xml para `yyyyyy.jpg` onde `yyy` é o conjunto de 6 algarismos que correspondem à imagem, ou correndo `uzo solve`     
+
+#### `uzo solve`
+Lança um gui para resolver manualmente os captchas novos
+
+#### `uzo data`
+Devolve a localização do directório com os captchas
+ 
