@@ -22,13 +22,14 @@ usage = """
 {0} logout                       Delete login credentials
 {0} send <number> <msg>          Send sms message to number.
 {0} check                        Check number of free messages left
-{1}
+
 {0} train                        Re-train model with files from captchas/ folder
 {0} grab [n]                     Grab n (default 10) new captchas and save to data folder. 
 {1}                              They can be solved manually by changing the .xml files in the 
 {1}                              data folder to <solution>.jpg, or by running "{0} solve"
 {0} solve                        Launch a gui to manually solve unsolved captchas in data folder
 {1}                              (requires matplotlib)
+{0} data                         Print location of captchas dir
 """.format(name,' '*len(name))
 
 def sanitize_phone(phone_str):
@@ -67,7 +68,7 @@ def _load_credentials(skipPassword=False):
         
     password = keyring.get_password(SERVICE,login)
     if password is None:
-        raise Exception("No password in keyring\n Must run \"%s login\" first" % login)
+        raise Exception("No password in keyring\n Must run \"%s login\" first" % name)
     return login,password
 
 # COMMANDS --------------------------------------------------------------------    
@@ -110,6 +111,9 @@ def do_grab(n=10):
 def do_solve():
     print "Solving new captchas..."
     train.answer_captchas((train.load_model(),None))
+
+def do_datadir():
+    print train.DATADIR    
     
 def _main():
     global args
@@ -146,13 +150,16 @@ def _main():
         do_train()
     
     elif 'grab' == action:
-        check_args()
         do_grab(int(args.pop())) if len(args) > 0 else do_grab()
+        check_args()
     
     elif 'solve' == action:
         check_args()
         do_solve()
     
+    elif 'data' == action:
+        check_args()
+        do_datadir()
     else:
         raise Exception('Invalid action', action)
     

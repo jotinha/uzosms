@@ -21,8 +21,6 @@ MODELFILE = path(__file__).dirname().joinpath('model.pkl')
             
 DATADIR = path(__file__).dirname().joinpath('captchas')
 
-print "DATADIR:",DATADIR          
-          
 def grab_and_save_captcha(session,fname=None):
     r = grab_captcha(session)
     if r.status_code == 200 and r.content:
