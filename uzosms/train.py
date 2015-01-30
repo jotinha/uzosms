@@ -12,6 +12,10 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.externals import joblib
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    pass
 
 MODELFILE = path(__file__).dirname().joinpath('model.pkl')
             
@@ -37,10 +41,11 @@ def download_captchas(n=10,max_interval=10):
         grab_and_save_captcha(s)
         
 def answer_captchas(lr_pca=None):
+    plt.ion()
     for fname in path(DATADIR).files('*.xml'):
         im = load_image(fname)
-        imshow(im)
-        show()
+        plt.imshow(im)
+        #plt.show()
         if lr_pca:
             suggestion = ''.join(map(str,
                             solve_chars(get_chars(im),lr_pca[0],lr_pca[1])))
@@ -95,9 +100,9 @@ def test_holes():
         for char,fname in zip(charsTrain[n],charsTrain_fname[n]):
             nholes = get_number_holes(char)
             if nholes != expected_number[n]:
-                figure()
-                imshow(char)
-                show()
+                plt.figure()
+                plt.imshow(char)
+                plt.show()
                 print fname
                 print "Expecting number %i but got %i holes" % (n,nholes)
 

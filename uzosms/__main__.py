@@ -7,7 +7,7 @@ Created on Wed Jan 28 15:40:43 2015
 
 import sys,os
 import keyring
-from train import train,DATADIR
+import train
 from uzo import Uzo
 from path import path
 
@@ -22,10 +22,14 @@ usage = """
 {0} logout                       Delete login credentials
 {0} send <number> <msg>          Send sms message to number.
 {0} check                        Check number of free messages left
+{1}
 {0} train                        Re-train model with files from captchas/ folder
 {0} grab [n]                     Grab n (default 10) new captchas and save to data folder. 
-                                 They must be solved by manually renaming <timestamp>.xml to <solution>.jpg
-""".format(name)
+{1}                              They can be solved manually by changing the .xml files in the 
+{1}                              data folder to <solution>.jpg, or by running "{0} solve"
+{0} solve                        Launch a gui to manually solve unsolved captchas in data folder
+{1}                              (requires matplotlib)
+""".format(name,' '*len(name))
 
 def sanitize_phone(phone_str):
     phone_str = phone_str.replace(' ','')
@@ -89,19 +93,23 @@ def do_check():
 
 def do_train():
     print "Training model"
-    train()
+    train.train()
 
 def do_grab(n=10):
     print "Grabbing %i new captchas" % n
     u = Uzo(*_load_credentials())
     
-    f = lambda i : path(DATADIR.joinpath('unsolved_%i.xml' % i))
+    f = lambda i : path(train.DATADIR.joinpath('unsolved_%i.xml' % i))
     i = 0
     for _ in range(n):
         while f(i).exists():
             i+=1
         print "Saving to ", f(i)
         u._grab_captcha(f(i))
+
+def do_solve():
+    print "Solving new captchas..."
+    train.answer_captchas((train.load_model(),None))
     
 def _main():
     global args
@@ -140,6 +148,10 @@ def _main():
     elif 'grab' == action:
         check_args()
         do_grab(int(args.pop())) if len(args) > 0 else do_grab()
+    
+    elif 'solve' == action:
+        check_args()
+        do_solve()
     
     else:
         raise Exception('Invalid action', action)
