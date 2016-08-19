@@ -5,5 +5,7 @@ numpy
 scipy
 scikit-learn
 keyring
+keyrings.alt
 nose
 pillow
+lxml

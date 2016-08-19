@@ -37,7 +37,7 @@ class Uzo(object):
         
         r = self._request(self.SMSURL)
         if r.content:
-            soup = BeautifulSoup(r.content)
+            soup = BeautifulSoup(r.content, 'lxml')
             summary = soup.find('div',attrs={'class':'summary'})
             if summary:
                 nleft,nsent = [int(s.text) for s in summary.findChildren('span',limit=2)]
@@ -52,7 +52,7 @@ class Uzo(object):
         r = self._request(self.LOGINURL)
         
         #TODO posso verificar aqui logo se o login já está feito
-        soup = BeautifulSoup(r.content)
+        soup = BeautifulSoup(r.content, 'lxml')
     
         #find first form in the page, the login form    
         form = soup.find('form')
