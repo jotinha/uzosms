@@ -4,7 +4,10 @@ Created on Wed Aug  6 17:01:02 2014
 
 @author: jsousa
 """
-from path import path
+try:
+    from path import path
+except ImportError:
+    from path import Path as path
 
 from captcha import *
 import sklearn

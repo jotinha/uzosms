@@ -7,7 +7,7 @@ except IOError:
 
 setup(
     name="uzosms",
-    version="0.1.0",
+    version="0.1.1",
     description="send sms with uzo.pt bypassing the captcha",
     license="MIT",
     author="jotinha",

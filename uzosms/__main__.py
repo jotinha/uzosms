@@ -9,7 +9,11 @@ import sys,os
 import keyring
 import train
 from uzo import Uzo
-from path import path
+try:
+    from path import path
+except ImportError:
+    from path import Path as path
+
 
 SERVICE = "uzosms"
 CONFIG = os.path.expanduser('~/.config/.uzosms')

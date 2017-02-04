@@ -9,7 +9,10 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import captcha, train
-from path import path
+try:
+    from path import path
+except ImportError:
+    from path import Path as path
 
 class Uzo(object):
     LOGINURL = "https://www.uzo.pt//pt/meu-uzo/pagina.uzo"
